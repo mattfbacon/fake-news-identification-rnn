@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup as bs
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Embedding, Masking
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.utils import to_categorical
 
@@ -161,14 +162,14 @@ model.add(Embedding(
 	output_dim=100,  # TUNABLE
 	mask_zero=True,  # since 0 means word not in vocabulary, we mask it.
 	weights=[embedding_matrix],  # use the pre-trained embeddings
-	trainable=False  # don't train this since it's pre-trained
+	trainable=False,  # don't train this since it's pre-trained
 ))
 
 # Masking layer for pre-trained embeddings, since the words in the pre-trained embeddings aren't guaranteed to match those in our Tokenizer's encoding
 model.add(Masking(mask_value=0.0))
 
 # Recurrent layer, to actually do the RNN stuff
-model.add(LSTM(64, return_sequences=False, dropout=0.1, recurrent_dropout=0.1, input_shape=(None, )))
+model.add(LSTM(64, return_sequences=False, dropout=0.1, recurrent_dropout=0.1, input_shape=(None, 100)))  # input shape: number of timesteps, dimensions in each timestep (100 from the embedding)
 
 # Fully connected layer, "adds additional representational capacity to the network"
 model.add(Dense(64, activation='relu'))
@@ -190,4 +191,4 @@ callbacks = [
 
 print('fitting model')
 
-history = model.fit(np.array(X_train), to_categorical(y_train), batch_size=2048, epochs=150, callbacks=callbacks, validation_data=(np.array(X_valid), to_categorical(y_valid)))
+history = model.fit(pad_sequences(X_train), to_categorical(y_train), batch_size=10, epochs=150, callbacks=callbacks, validation_data=(pad_sequences(X_valid), to_categorical(y_valid)))
